@@ -350,6 +350,11 @@ const resetButton = document.querySelector("#reset-button");
 const resetDialog = document.querySelector("#reset-dialog");
 const printButton = document.querySelector("#print-button");
 const toast = document.querySelector("#toast");
+const configurationCount = document.querySelector("#configuration-count");
+const configurationFields = [
+  ...document.querySelectorAll("[data-configuration-key]"),
+];
+const showAllItems = document.querySelector("#show-all-items");
 
 function rowId(section, index) {
   return `${section.id}--${index}`;
@@ -370,6 +375,101 @@ const CHAIN_WEAR_ROW_ID = checklistRowId(
 );
 const SPROCKET_ROW_ID = checklistRowId("drivetrain-gears", "Sprocket");
 const CHAIN_WEAR_OPTIONS = ["OK", "0.5", "0.75"];
+const FULL_CHECKLIST_TOTAL = CHECKLIST_SECTIONS.reduce(
+  (sum, section) => sum + section.rows.length,
+  0,
+);
+const DEFAULT_CONFIGURATION = Object.freeze({
+  ebike: "",
+  frontBrake: "",
+  rearBrake: "",
+  suspension: "",
+  gearing: "",
+  drive: "",
+  dropper: "",
+});
+
+const EBIKE_ROWS = new Set([
+  checklistRowId(
+    "immediate-safety",
+    "E-bike battery free from immediate hazard",
+  ),
+  checklistRowId("cockpit-contact-points", "E-bike remote"),
+  checklistRowId("cockpit-contact-points", "E-bike display"),
+  checklistRowId("functional-road-test", "Road-test e-bike cut-off"),
+]);
+
+const DROPPER_ROWS = new Set([
+  checklistRowId("cockpit-contact-points", "Dropper seatpost"),
+  checklistRowId("cockpit-contact-points", "Dropper remote"),
+]);
+
+const FRONT_SUSPENSION_ROWS = new Set([
+  checklistRowId("frame-fork-suspension", "Suspension stanchions"),
+  checklistRowId("frame-fork-suspension", "Suspension seals"),
+  checklistRowId("frame-fork-suspension", "Suspension movement"),
+  checklistRowId("functional-road-test", "Bounce assessment"),
+]);
+
+const REAR_SUSPENSION_ROWS = new Set([
+  checklistRowId("frame-fork-suspension", "Suspension pivots"),
+  checklistRowId("frame-fork-suspension", "Suspension mounting hardware"),
+]);
+
+const BELT_HIDDEN_ROWS = new Set([
+  CHAIN_WEAR_ROW_ID,
+  checklistRowId("drivetrain-gears", "Chainring"),
+  checklistRowId("drivetrain-gears", "Chainring bolts"),
+  checklistRowId("drivetrain-gears", "Chain line"),
+]);
+
+const SINGLE_SPEED_ROWS = new Set([
+  checklistRowId("cockpit-contact-points", "Left shifter"),
+  checklistRowId("cockpit-contact-points", "Right shifter"),
+  checklistRowId("drivetrain-gears", "Front shift cable"),
+  checklistRowId("drivetrain-gears", "Rear shift cable"),
+  checklistRowId("drivetrain-gears", "Front shift housing"),
+  checklistRowId("drivetrain-gears", "Rear shift housing"),
+  checklistRowId("drivetrain-gears", "Electronic shift wiring"),
+  checklistRowId("drivetrain-gears", "Front derailleur"),
+  checklistRowId("drivetrain-gears", "Rear derailleur"),
+  checklistRowId("drivetrain-gears", "Front derailleur limits"),
+  checklistRowId("drivetrain-gears", "Rear derailleur limits"),
+  checklistRowId("drivetrain-gears", "Rear derailleur B-gap"),
+  checklistRowId("drivetrain-gears", "Full gear range"),
+  checklistRowId("drivetrain-gears", "Under-load shifting"),
+  checklistRowId("drivetrain-gears", "Internal gear hub"),
+  checklistRowId("drivetrain-gears", "Hub-gear cable"),
+  checklistRowId("drivetrain-gears", "Hub reaction arm"),
+  checklistRowId("functional-road-test", "Workshop-load gear test"),
+  checklistRowId("functional-road-test", "Road-test shifting"),
+]);
+
+const DERAILLEUR_ROWS = new Set([
+  checklistRowId("frame-fork-suspension", "Derailleur hanger"),
+  checklistRowId("drivetrain-gears", "Front derailleur"),
+  checklistRowId("drivetrain-gears", "Rear derailleur"),
+  checklistRowId("drivetrain-gears", "Front derailleur limits"),
+  checklistRowId("drivetrain-gears", "Rear derailleur limits"),
+  checklistRowId("drivetrain-gears", "Rear derailleur B-gap"),
+]);
+
+const MECHANICAL_SHIFT_ROWS = new Set([
+  checklistRowId("drivetrain-gears", "Front shift cable"),
+  checklistRowId("drivetrain-gears", "Rear shift cable"),
+  checklistRowId("drivetrain-gears", "Front shift housing"),
+  checklistRowId("drivetrain-gears", "Rear shift housing"),
+]);
+
+const ELECTRONIC_SHIFT_ROWS = new Set([
+  checklistRowId("drivetrain-gears", "Electronic shift wiring"),
+]);
+
+const INTERNAL_GEAR_ROWS = new Set([
+  checklistRowId("drivetrain-gears", "Internal gear hub"),
+  checklistRowId("drivetrain-gears", "Hub-gear cable"),
+  checklistRowId("drivetrain-gears", "Hub reaction arm"),
+]);
 
 let checklistState = loadState();
 delete checklistState.statuses[CHAIN_WEAR_ROW_ID];
@@ -385,13 +485,25 @@ function loadState() {
         notes: stored.notes || {},
         measurements: stored.measurements || {},
         autoStatuses: stored.autoStatuses || {},
+        configuration: {
+          ...DEFAULT_CONFIGURATION,
+          ...(stored.configuration || {}),
+        },
+        showAllItems: stored.showAllItems === true,
       };
     }
   } catch {
     // A fresh checklist is safer than blocking the form if stored data is invalid.
   }
 
-  return { statuses: {}, notes: {}, measurements: {}, autoStatuses: {} };
+  return {
+    statuses: {},
+    notes: {},
+    measurements: {},
+    autoStatuses: {},
+    configuration: { ...DEFAULT_CONFIGURATION },
+    showAllItems: false,
+  };
 }
 
 function rowIsComplete(row) {
@@ -401,10 +513,165 @@ function rowIsComplete(row) {
   return Boolean(checklistState.statuses[row]);
 }
 
+function brakeSideForItem(item) {
+  const normalisedItem = item.toLowerCase();
+  if (normalisedItem.includes("front")) return "front";
+  if (normalisedItem.includes("rear")) return "rear";
+  return "";
+}
+
+function selectedBrakeType(side) {
+  if (side === "front") return checklistState.configuration.frontBrake;
+  if (side === "rear") return checklistState.configuration.rearBrake;
+  return "";
+}
+
+function brakeSystemRowIsRelevant(sectionId, item) {
+  const brakeType = selectedBrakeType(brakeSideForItem(item));
+  if (!brakeType) return true;
+
+  if (sectionId === "mechanical-brakes") {
+    if (!brakeType.startsWith("mechanical-")) return false;
+    if (item.includes("rim-brake")) {
+      return brakeType === "mechanical-rim";
+    }
+    if (item.includes("rotor")) {
+      return brakeType === "mechanical-disc";
+    }
+    return true;
+  }
+
+  if (sectionId === "hydraulic-brakes") {
+    return brakeType === "hydraulic-disc";
+  }
+
+  return true;
+}
+
+function rowIsRelevant(section, item, index) {
+  if (checklistState.showAllItems) return true;
+
+  const id = rowId(section, index);
+  const configuration = checklistState.configuration;
+
+  if (
+    section.id === "mechanical-brakes" ||
+    section.id === "hydraulic-brakes"
+  ) {
+    return brakeSystemRowIsRelevant(section.id, item);
+  }
+
+  if (configuration.ebike) {
+    const isEbikeSection =
+      section.id === "ebike-battery" || section.id === "ebike-drive";
+    if (
+      configuration.ebike === "no" &&
+      (isEbikeSection || EBIKE_ROWS.has(id))
+    ) {
+      return false;
+    }
+  }
+
+  if (configuration.dropper === "no" && DROPPER_ROWS.has(id)) {
+    return false;
+  }
+
+  if (configuration.suspension === "rigid") {
+    if (FRONT_SUSPENSION_ROWS.has(id) || REAR_SUSPENSION_ROWS.has(id)) {
+      return false;
+    }
+  } else if (
+    configuration.suspension === "front" &&
+    REAR_SUSPENSION_ROWS.has(id)
+  ) {
+    return false;
+  }
+
+  if (configuration.drive === "chain" && item === "Belt drive") {
+    return false;
+  }
+  if (configuration.drive === "belt" && BELT_HIDDEN_ROWS.has(id)) {
+    return false;
+  }
+
+  if (configuration.gearing) {
+    if (
+      DERAILLEUR_ROWS.has(id) &&
+      !configuration.gearing.endsWith("-derailleur")
+    ) {
+      return false;
+    }
+    if (
+      MECHANICAL_SHIFT_ROWS.has(id) &&
+      configuration.gearing !== "mechanical-derailleur"
+    ) {
+      return false;
+    }
+    if (
+      ELECTRONIC_SHIFT_ROWS.has(id) &&
+      configuration.gearing !== "electronic-derailleur"
+    ) {
+      return false;
+    }
+    if (
+      INTERNAL_GEAR_ROWS.has(id) &&
+      configuration.gearing !== "internal"
+    ) {
+      return false;
+    }
+    if (configuration.gearing === "single" && SINGLE_SPEED_ROWS.has(id)) {
+      return false;
+    }
+    if (
+      configuration.gearing === "internal" &&
+      id === checklistRowId("cockpit-contact-points", "Left shifter")
+    ) {
+      return false;
+    }
+  }
+
+  const side = brakeSideForItem(item);
+  const brakeType = selectedBrakeType(side);
+  if (brakeType) {
+    if (
+      item === `${side === "front" ? "Front" : "Rear"} rim braking surface`
+    ) {
+      return brakeType === "mechanical-rim";
+    }
+    if (brakeType === "none") {
+      const brakeSpecificItems = new Set([
+        `${side === "front" ? "Front" : "Rear"} brake controls bike safely`,
+        `${side === "front" ? "Front" : "Rear"} brake lever`,
+        `Workshop-load ${side} brake test`,
+      ]);
+      if (brakeSpecificItems.has(item)) return false;
+    }
+  }
+
+  if (item === "Brake hose routing") {
+    const brakeTypes = [
+      configuration.frontBrake,
+      configuration.rearBrake,
+    ];
+    const hydraulicStillPossible = brakeTypes.some(
+      (type) => !type || type === "hydraulic-disc",
+    );
+    if (!hydraulicStillPossible) return false;
+  }
+
+  return true;
+}
+
+function relevantRowsForSection(section) {
+  return section.rows
+    .map((item, index) => ({ item, index }))
+    .filter(({ item, index }) => rowIsRelevant(section, item, index));
+}
+
 function renderChecklist() {
   navigation.innerHTML = CHECKLIST_SECTIONS.map(
     (section) => `
-      <li>
+      <li data-section-navigation="${section.id}">
         <button class="nav-link" type="button" data-section-link="${section.id}">
           <span class="nav-number">${section.number}</span>
           <span class="nav-title">${section.title}</span>
@@ -502,7 +769,8 @@ function renderChecklist() {
     `;
   }).join("");
 
-  applyIncompleteFilter();
+  syncConfigurationControls();
+  applyChecklistFilters();
   updateProgress();
   initialiseSectionObserver();
 }
@@ -512,6 +780,29 @@ function escapeTextarea(value) {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+}
+
+function syncConfigurationControls() {
+  configurationFields.forEach((field) => {
+    const key = field.dataset.configurationKey;
+    field.value = checklistState.configuration[key] || "";
+  });
+  showAllItems.checked = checklistState.showAllItems;
+}
+
+function updateConfiguration(key, value) {
+  if (!Object.hasOwn(DEFAULT_CONFIGURATION, key)) return;
+  checklistState.configuration[key] = value;
+  applyChecklistFilters();
+  updateProgress();
+  scheduleSave();
+}
+
+function updateShowAllItems(showAll) {
+  checklistState.showAllItems = showAll;
+  applyChecklistFilters();
+  updateProgress();
+  scheduleSave();
 }
 
 function refreshStatusRow(row) {
@@ -537,7 +828,7 @@ function updateStatus(row, status) {
 
   refreshStatusRow(row);
   updateProgress();
-  applyIncompleteFilter();
+  applyChecklistFilters();
   scheduleSave();
 }
 
@@ -577,7 +868,7 @@ function updateMeasurement(row, value) {
 
   refreshStatusRow(row);
   updateProgress();
-  applyIncompleteFilter();
+  applyChecklistFilters();
   scheduleSave();
 }
 
@@ -591,22 +882,21 @@ function updateNote(row, value) {
 }
 
 function updateProgress() {
-  const total = CHECKLIST_SECTIONS.reduce(
-    (sum, section) => sum + section.rows.length,
-    0,
-  );
+  let total = 0;
   const completed = CHECKLIST_SECTIONS.reduce((sum, section) => {
-    const sectionCompleted = section.rows.filter((_, index) =>
+    const relevantRows = relevantRowsForSection(section);
+    const sectionCompleted = relevantRows.filter(({ index }) =>
       rowIsComplete(rowId(section, index)),
     ).length;
+    total += relevantRows.length;
 
     const sectionCount = document.querySelector(`#section-count-${section.id}`);
     const navCount = document.querySelector(`#nav-count-${section.id}`);
     if (sectionCount) {
-      sectionCount.textContent = `${sectionCompleted} of ${section.rows.length}`;
+      sectionCount.textContent = `${sectionCompleted} of ${relevantRows.length}`;
     }
     if (navCount) {
-      navCount.textContent = `${sectionCompleted}/${section.rows.length}`;
+      navCount.textContent = `${sectionCompleted}/${relevantRows.length}`;
     }
 
     return sum + sectionCompleted;
@@ -619,6 +909,7 @@ function updateProgress() {
   ringPercent.textContent = `${percent}%`;
   progressRing.style.setProperty("--progress", `${percent * 3.6}deg`);
   sidebarProgressLabel.textContent = `${completed} of ${total} items`;
+  configurationCount.textContent = `${total} of ${FULL_CHECKLIST_TOTAL}`;
 }
 
 function scheduleSave() {
@@ -636,21 +927,42 @@ function saveChecklist() {
   }
 }
 
-function applyIncompleteFilter() {
-  const filtering = incompleteFilter.checked;
+function applyChecklistFilters() {
+  const filteringIncomplete = incompleteFilter.checked;
+
   CHECKLIST_SECTIONS.forEach((section) => {
     const sectionElement = document.querySelector(`[data-section="${section.id}"]`);
+    const navigationElement = document.querySelector(
+      `[data-section-navigation="${section.id}"]`,
+    );
+    let relevantRows = 0;
     let visibleRows = 0;
 
-    section.rows.forEach((_, index) => {
+    section.rows.forEach((item, index) => {
       const id = rowId(section, index);
       const element = document.querySelector(`[data-row="${CSS.escape(id)}"]`);
-      const hide = filtering && rowIsComplete(id);
-      element.classList.toggle("is-hidden", hide);
-      if (!hide) visibleRows += 1;
+      const relevant = rowIsRelevant(section, item, index);
+      const hideAsComplete =
+        relevant && filteringIncomplete && rowIsComplete(id);
+
+      element.classList.toggle("is-configuration-hidden", !relevant);
+      element.classList.toggle("is-incomplete-hidden", hideAsComplete);
+
+      if (relevant) relevantRows += 1;
+      if (relevant && !hideAsComplete) visibleRows += 1;
     });
 
-    sectionElement.classList.toggle("all-hidden", filtering && visibleRows === 0);
+    sectionElement.classList.toggle(
+      "is-configuration-hidden",
+      relevantRows === 0,
+    );
+    sectionElement.classList.toggle(
+      "all-hidden",
+      relevantRows > 0 && filteringIncomplete && visibleRows === 0,
+    );
+    if (navigationElement) {
+      navigationElement.hidden = relevantRows === 0;
+    }
   });
 }
 
@@ -660,6 +972,8 @@ function resetChecklist() {
     notes: {},
     measurements: {},
     autoStatuses: {},
+    configuration: { ...DEFAULT_CONFIGURATION },
+    showAllItems: false,
   };
   localStorage.removeItem(STORAGE_KEY);
 
@@ -677,7 +991,8 @@ function resetChecklist() {
   });
 
   incompleteFilter.checked = false;
-  applyIncompleteFilter();
+  syncConfigurationControls();
+  applyChecklistFilters();
   updateProgress();
   saveState.textContent = "New checklist";
   showToast("Checklist reset");
@@ -741,7 +1056,17 @@ navigation.addEventListener("click", (event) => {
     .scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-incompleteFilter.addEventListener("change", applyIncompleteFilter);
+configurationFields.forEach((field) => {
+  field.addEventListener("change", () => {
+    updateConfiguration(field.dataset.configurationKey, field.value);
+  });
+});
+
+showAllItems.addEventListener("change", () => {
+  updateShowAllItems(showAllItems.checked);
+});
+
+incompleteFilter.addEventListener("change", applyChecklistFilters);
 printButton.addEventListener("click", () => window.print());
 
 resetButton.addEventListener("click", () => {
