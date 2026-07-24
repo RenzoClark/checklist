@@ -9,7 +9,7 @@
     />
     <meta name="theme-color" content="#183246" />
     <title>Workshop Bike Inspection</title>
-    <link rel="stylesheet" href="./styles.css?v=4" />
+    <link rel="stylesheet" href="./styles.css?v=5" />
   </head>
   <body>
     <header class="topbar">
@@ -97,6 +97,104 @@
           </div>
         </section>
 
+        <section class="configuration-card" aria-labelledby="configuration-title">
+          <div class="configuration-heading">
+            <div>
+              <p class="eyebrow">Bike setup</p>
+              <h2 id="configuration-title">Show only relevant checks</h2>
+              <p>
+                Select the components fitted to this bike. Unselected fields
+                leave their related checks visible.
+              </p>
+            </div>
+            <div class="configuration-count" aria-live="polite">
+              <strong id="configuration-count">239 of 239</strong>
+              <span>inspection points shown</span>
+            </div>
+          </div>
+
+          <div class="configuration-grid">
+            <label class="configuration-field">
+              <span>E-bike</span>
+              <select data-configuration-key="ebike">
+                <option value="">Select</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </label>
+
+            <label class="configuration-field">
+              <span>Front brake</span>
+              <select data-configuration-key="frontBrake">
+                <option value="">Select type</option>
+                <option value="mechanical-rim">Mechanical rim</option>
+                <option value="mechanical-disc">Mechanical disc</option>
+                <option value="hydraulic-disc">Hydraulic disc</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+
+            <label class="configuration-field">
+              <span>Rear brake</span>
+              <select data-configuration-key="rearBrake">
+                <option value="">Select type</option>
+                <option value="mechanical-rim">Mechanical rim</option>
+                <option value="mechanical-disc">Mechanical disc</option>
+                <option value="hydraulic-disc">Hydraulic disc</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+
+            <label class="configuration-field">
+              <span>Suspension</span>
+              <select data-configuration-key="suspension">
+                <option value="">Select type</option>
+                <option value="rigid">Rigid</option>
+                <option value="front">Front suspension</option>
+                <option value="full">Full suspension</option>
+              </select>
+            </label>
+
+            <label class="configuration-field">
+              <span>Gearing</span>
+              <select data-configuration-key="gearing">
+                <option value="">Select type</option>
+                <option value="mechanical-derailleur">Mechanical derailleur</option>
+                <option value="electronic-derailleur">Electronic derailleur</option>
+                <option value="internal">Internal gear hub</option>
+                <option value="single">Single speed</option>
+              </select>
+            </label>
+
+            <label class="configuration-field">
+              <span>Drive</span>
+              <select data-configuration-key="drive">
+                <option value="">Select type</option>
+                <option value="chain">Chain</option>
+                <option value="belt">Belt</option>
+              </select>
+            </label>
+
+            <label class="configuration-field">
+              <span>Dropper post</span>
+              <select data-configuration-key="dropper">
+                <option value="">Select</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="filter-toggle show-all-toggle">
+            <input id="show-all-items" type="checkbox" />
+            <span class="toggle-ui" aria-hidden="true"></span>
+            <span>
+              <strong>Show all 239</strong>
+              <small>Temporarily ignore the bike setup filters</small>
+            </span>
+          </label>
+        </section>
+
         <noscript>
           <div class="notice">
             JavaScript is required to use the interactive checklist.
@@ -124,8 +222,8 @@
         <div class="dialog-icon" aria-hidden="true">!</div>
         <h2>Reset the checklist?</h2>
         <p>
-          This will clear every selected status, measurement and note saved on
-          this device.
+          This will clear the bike setup and every selected status, measurement
+          and note saved on this device.
         </p>
         <div class="dialog-actions">
           <button class="button button-secondary" value="cancel">Keep checklist</button>
@@ -138,6 +236,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script src="./app.js?v=3" defer></script>
+    <script src="./app.js?v=4" defer></script>
   </body>
 </html>
