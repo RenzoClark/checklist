@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A professional, interactive bicycle workshop pre-authorisation inspection checklist."
+    />
+    <meta name="theme-color" content="#183246" />
+    <title>Workshop Bike Inspection</title>
+    <link rel="stylesheet" href="./styles.css?v=3" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span>
+        </span>
+        <div>
+          <p class="eyebrow">Workshop checklist</p>
+          <p class="brand-title">Bike Inspection</p>
+        </div>
+      </div>
+
+      <div class="header-progress" aria-label="Checklist progress">
+        <div class="progress-copy">
+          <span id="progress-label">0 of 0 checked</span>
+          <strong id="progress-percent">0%</strong>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <span id="progress-bar"></span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="button button-secondary" id="print-button" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z" />
+          </svg>
+          Print / PDF
+        </button>
+        <button class="button button-danger" id="reset-button" type="button">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Checklist sections">
+        <div class="sidebar-progress">
+          <div class="progress-ring" id="progress-ring">
+            <span id="ring-percent">0%</span>
+          </div>
+          <div>
+            <strong>Inspection progress</strong>
+            <span id="sidebar-progress-label">0 of 0 items</span>
+          </div>
+        </div>
+
+        <nav>
+          <p class="nav-label">Jump to section</p>
+          <ol id="section-navigation"></ol>
+        </nav>
+
+        <label class="filter-toggle">
+          <input id="incomplete-filter" type="checkbox" />
+          <span class="toggle-ui" aria-hidden="true"></span>
+          <span>
+            <strong>Incomplete only</strong>
+            <small>Hide checked rows</small>
+          </span>
+        </label>
+
+        <p class="save-state" id="save-state" aria-live="polite">
+          Saved on this device
+        </p>
+      </aside>
+
+      <main>
+        <section class="intro-card" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">Pre-authorisation assessment</p>
+            <h1 id="page-title">Workshop Bike Inspection</h1>
+            <p>
+              Select one status or measurement for every applicable line.
+              Findings and required actions can be entered in the blank notes
+              fields.
+            </p>
+          </div>
+
+          <div class="status-key" aria-label="Status key">
+            <span class="key-item key-ok"><i></i><strong>OK</strong> Serviceable</span>
+            <span class="key-item key-adjust"><i></i><strong>ADJ</strong> Adjust / service</span>
+            <span class="key-item key-replace"><i></i><strong>RPL</strong> Replace</span>
+            <span class="key-item key-stop"><i></i><strong>STOP</strong> Unsafe</span>
+          </div>
+        </section>
+
+        <noscript>
+          <div class="notice">
+            JavaScript is required to use the interactive checklist.
+          </div>
+        </noscript>
+
+        <form id="checklist-form" autocomplete="off"></form>
+
+        <footer class="page-footer">
+          <p>
+            Pre-authorisation assessment only. Hidden faults may become apparent
+            during service. Do not test ride or release a bike with a STOP item
+            unresolved.
+          </p>
+          <p>
+            Use manufacturer procedures, torque specifications, service limits
+            and shop policy.
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <dialog id="reset-dialog">
+      <form method="dialog">
+        <div class="dialog-icon" aria-hidden="true">!</div>
+        <h2>Reset the checklist?</h2>
+        <p>
+          This will clear every selected status, measurement and note saved on
+          this device.
+        </p>
+        <div class="dialog-actions">
+          <button class="button button-secondary" value="cancel">Keep checklist</button>
+          <button class="button button-danger solid" id="confirm-reset" value="confirm">
+            Reset everything
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js?v=3" defer></script>
+  </body>
+</html>
